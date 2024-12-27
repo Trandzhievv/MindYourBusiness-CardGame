@@ -30,3 +30,19 @@
 *.exe
 *.out
 *.app
+
+# Visual Studio user options
+*.vsdx
+*.suo
+
+# Visual Studio browse database
+Browse.VC.db
+
+# Debugging files
+*.ilk
+*.pdb
+*.idb
+
+# Log files
+*.log
+*.tlog
