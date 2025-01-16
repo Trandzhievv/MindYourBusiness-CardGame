@@ -1,8 +1,8 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <ctime>     
-#include <cstdlib>   
+#include <ctime>
+#include <cstdlib>
 
 using namespace std;
 
@@ -12,196 +12,266 @@ struct Card {
         Ace = 1, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten,
         Jack, Queen, King
     };
-
     Rank rank;
     Suit suit;
-
-    Card(Rank rank, Suit suit) : rank(rank), suit(suit) {}
-
+    Card(Rank r, Suit s) : rank(r), suit(s) {}
     string toString() const {
-        const string ranks[] = { "", "Ace", "Two", "Three", "Four", "Five", "Six",
-      "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King" };
-        const string suits[] = { "Hearts", "Diamonds", "Clubs", "Spades" };
+        static const string ranks[] = {
+            "", "Ace", "Two", "Three", "Four", "Five", "Six",
+            "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King"
+        };
+        static const string suits[] = { "Hearts", "Diamonds", "Clubs", "Spades" };
         return ranks[rank] + " of " + suits[suit];
     }
 };
 
 struct Deck {
     vector<Card> cards;
-
     Deck() {
-        for (int suit = 0; suit < 4; ++suit) {
-            for (int rank = 1; rank <= 13; ++rank) {
-                cards.emplace_back(static_cast<Card::Rank>(rank), static_cast<Card::Suit>(suit));
+        for (int s = 0; s < 4; s++) {
+            for (int r = 1; r <= 13; r++) {
+                cards.push_back(Card((Card::Rank)r, (Card::Suit)s));
             }
         }
     }
-
     void shuffle() {
-        srand(time(nullptr)); 
-        for (size_t i = cards.size() - 1; i > 0; --i) {
-            size_t j = rand() % (i + 1);
-            swap(cards[i], cards[j]);
+        srand((unsigned)time(nullptr));
+        for (int i = (int)cards.size() - 1; i > 0; i--) {
+            int j = rand() % (i + 1);
+            Card tmp = cards[i];
+            cards[i] = cards[j];
+            cards[j] = tmp;
         }
     }
-
     Card dealCard() {
         if (cards.empty()) {
             throw out_of_range("No cards left in the deck");
         }
-        Card card = cards.back();
+        Card c = cards.back();
         cards.pop_back();
-        return card;
+        return c;
     }
-
     bool isEmpty() const {
         return cards.empty();
     }
 };
 
+void waitForMindYourBusiness() {
+    bool ok = false;
+    while (!ok) {
+        string line;
+        cin >> ws;
+        getline(cin, line);
+        if (line == "mind your business!") {
+            ok = true;
+        }
+        else {
+            cout << "Invalid response. Please type 'mind your business!': ";
+        }
+    }
+}
+
 struct Player {
     string name;
     vector<Card> hand;
-
-    Player(const string& name) : name(name) {}
-
-    void addCard(const Card& card) {
-        hand.push_back(card);
+    Player(const string& n) : name(n) {}
+    void addCard(const Card& c) {
+        hand.push_back(c);
     }
-
-    bool hasRank(Card::Rank rank) const {
-        for (const auto& card : hand) {
-            if (card.rank == rank) {
-                return true;
-            }
+    bool hasRank(Card::Rank r) const {
+        for (auto& card : hand) {
+            if (card.rank == r) return true;
         }
         return false;
     }
-
-    void giveCards(Card::Rank rank, vector<Card>& target) {
-        for (auto it = hand.begin(); it != hand.end();) {
-            if (it->rank == rank) {
-                target.push_back(*it);
-                it = hand.erase(it);
+    void giveCards(Card::Rank r, vector<Card>& target) {
+        for (int i = 0; i < (int)hand.size();) {
+            if (hand[i].rank == r) {
+                target.push_back(hand[i]);
+                hand.erase(hand.begin() + i);
             }
             else {
-                ++it;
+                i++;
             }
         }
     }
-
     void showHand() const {
         cout << name << "'s hand:" << endl;
-        for (const auto& card : hand) {
-            cout << "  " << card.toString() << endl;
+        for (auto& c : hand) {
+            cout << "  " << c.toString() << endl;
         }
     }
 };
+
+void drawCard(Player& player, Deck& deck) {
+    if (!deck.isEmpty()) {
+        Card c = deck.dealCard();
+        player.addCard(c);
+        cout << "You drew: " << c.toString() << endl;
+    }
+    else {
+        cout << "No cards left in the deck." << endl;
+    }
+}
 
 Card::Rank parseRank(const string& input) {
     if (input == "A" || input == "a") return Card::Ace;
     if (input == "J" || input == "j") return Card::Jack;
     if (input == "Q" || input == "q") return Card::Queen;
     if (input == "K" || input == "k") return Card::King;
-    int rank = stoi(input);
-    if (rank >= 2 && rank <= 10) return static_cast<Card::Rank>(rank);
+    int val = stoi(input);
+    if (val >= 2 && val <= 10) {
+        return (Card::Rank)val;
+    }
     throw invalid_argument("Invalid rank input");
 }
 
-void drawCard(Player& player, Deck& deck) {
-    if (!deck.isEmpty()) {
-        player.addCard(deck.dealCard());
-        cout << "Command: draw\n";
-    }
-    else {
-        cout << "No cards left in the deck to draw.\n";
-    }
-}
-
 void initializeGame(Deck& deck, Player& user, Player& computer) {
-    cout << "Command: deal\n";
+    cout << "Command: deal" << endl;
     deck.shuffle();
-
-    for (int i = 0; i < 6; ++i) {
+    for (int i = 0; i < 6; i++) {
         user.addCard(deck.dealCard());
         computer.addCard(deck.dealCard());
     }
-
-    cout << "Initial hands:\n";
+    cout << "Initial hands:" << endl;
     user.showHand();
 }
 
-void processTurn(Player& active, Player& opponent, Deck& deck, bool isUser) {
-    if (isUser) {
-        cout << "\nYour turn. Enter a command (e.g., ask <rank>, draw): ";
-        string command;
-        cin >> command;
-
-        if (command == "ask") {
-            string rankInput;
-            cin >> rankInput;
-
-            try {
-                Card::Rank rank = parseRank(rankInput);
-
-                if (opponent.hasRank(rank)) {
-                    cout << opponent.name << " gives you all cards of rank " << rankInput << "!\n";
-                    opponent.giveCards(rank, active.hand);
-                }
-                else {
-                    cout << opponent.name << " has no cards of that rank. Drawing a card from the deck.\n";
-                    drawCard(active, deck);
-                }
-            }
-            catch (const invalid_argument&) {
-                cout << "Invalid rank input. Try again.\n";
-            }
-        }
-        else if (command == "draw") {
-            drawCard(active, deck);
-        }
-        else {
-            cout << "Invalid command. Try again.\n";
-        }
-    }
-    else {
-        cout << "\n" << active.name << "'s turn.\n";
-        if (!active.hand.empty()) {
-            Card::Rank rank = active.hand[rand() % active.hand.size()].rank;
-            cout << active.name << " asks for " << rank << "s!\n";
-
-            if (opponent.hasRank(rank)) {
-                cout << "give " << rank << "s\n";
-                opponent.giveCards(rank, active.hand);
+void processUserTurn(Player& user, Player& comp, Deck& deck) {
+    cout << "\nYour turn. Enter a command: ask <rank>, draw" << endl;
+    string cmd;
+    cin >> cmd;
+    if (cmd == "ask") {
+        string rankInput;
+        cin >> rankInput;
+        try {
+            Card::Rank r = parseRank(rankInput);
+            if (comp.hasRank(r)) {
+                cout << comp.name << " gives you all cards of rank " << rankInput << "!" << endl;
+                comp.giveCards(r, user.hand);
             }
             else {
-                cout << opponent.name << " has no cards of that rank. Drawing a card from the deck.\n";
-                drawCard(active, deck);
+                cout << "Mind your business!" << endl;
+                cout << "Enter 'draw' to draw a card: ";
+                bool done = false;
+                while (!done) {
+                    string sub;
+                    cin >> sub;
+                    if (sub == "draw") {
+                        drawCard(user, deck);
+                        done = true;
+                    }
+                    else {
+                        cout << "Invalid command, type 'draw': ";
+                    }
+                }
+            }
+        }
+        catch (...) {
+            cout << "Invalid rank input." << endl;
+        }
+    }
+    else if (cmd == "draw") {
+        drawCard(user, deck);
+    }
+    else {
+        cout << "Invalid command." << endl;
+    }
+    cout << "\nYour updated hand:" << endl;
+    user.showHand();
+}
+
+void processComputerTurn(Player& comp, Player& user, Deck& deck) {
+    cout << "\n" << comp.name << "'s turn." << endl;
+    if (!comp.hand.empty()) {
+        Card::Rank r = comp.hand[rand() % comp.hand.size()].rank;
+        cout << comp.name << " asks for rank " << r << "!" << endl;
+        if (user.hasRank(r)) {
+            cout << "User, please type 'mind your business!' or 'give <rank>': ";
+            while (true) {
+                string tmp;
+                cin >> ws;
+                getline(cin, tmp);
+                if (tmp == "mind your business!") {
+                    cout << "Ok, the computer draws a card." << endl;
+                    if (!deck.isEmpty()) {
+                        Card c = deck.dealCard();
+                        comp.addCard(c);
+                        cout << comp.name << " draws: " << c.toString() << endl;
+                    }
+                    else {
+                        cout << "No cards left in the deck for the computer." << endl;
+                    }
+                    break;
+                }
+                else {
+                    // check for "give <rank>"
+                    if (tmp.rfind("give", 0) == 0) {
+                        // parse rank after "give"
+                        string rnk = tmp.substr(5);
+                        try {
+                            Card::Rank rr = parseRank(rnk);
+                            if (rr == r) {
+                                user.giveCards(rr, comp.hand);
+                                cout << "Cards given to computer." << endl;
+                            }
+                            else {
+                                cout << "Wrong rank given. Try again or 'mind your business!'." << endl;
+                                continue;
+                            }
+                        }
+                        catch (...) {
+                            cout << "Invalid rank to give. Try again or 'mind your business!'." << endl;
+                            continue;
+                        }
+                        break;
+                    }
+                    else {
+                        cout << "Invalid command. Type 'give <rank>' or 'mind your business!': ";
+                    }
+                }
+            }
+        }
+        else {
+            cout << "User does not have that rank. Please type 'mind your business!': ";
+            waitForMindYourBusiness();
+            cout << comp.name << " draws a card." << endl;
+            if (!deck.isEmpty()) {
+                Card c = deck.dealCard();
+                comp.addCard(c);
+                cout << "Computer drew: " << c.toString() << endl;
+            }
+            else {
+                cout << "No cards left in the deck for the computer." << endl;
             }
         }
     }
 }
 
 int main() {
+    srand((unsigned)time(nullptr));
     Deck deck;
-    Player user("User");
-    Player computer("Computer");
-
+    Player user("User"), computer("Computer");
     initializeGame(deck, user, computer);
-
     bool userTurnFlag = true;
-
     while (!deck.isEmpty()) {
-        processTurn(userTurnFlag ? user : computer, userTurnFlag ? computer : user, deck, userTurnFlag);
+        if (userTurnFlag) {
+            processUserTurn(user, computer, deck);
+        }
+        else {
+            processComputerTurn(computer, user, deck);
+        }
         userTurnFlag = !userTurnFlag;
-
-        cout << "\nUpdated hands:\n";
-        user.showHand();
     }
-
-    cout << "\nGame over!\n";
+    cout << "\nGame over!" << endl;
     return 0;
 }
+
+
+
+
+
+
 
 
 
