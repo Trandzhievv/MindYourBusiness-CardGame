@@ -74,6 +74,8 @@ void waitForMindYourBusiness() {
 struct Player {
     string name;
     vector<Card> hand;
+    vector<Card::Rank> collectedRanks;
+
     Player(const string& n) : name(n) {}
     void addCard(const Card& c) {
         hand.push_back(c);
@@ -95,6 +97,38 @@ struct Player {
             }
         }
     }
+    bool canDropFourOfAKind() const {
+        int rankCount[14];
+        for (int i = 0; i < 14; i++) rankCount[i] = 0;
+        for (auto& c : hand) {
+            rankCount[c.rank]++;
+        }
+        for (int r = (int)Card::Ace; r <= (int)Card::King; r++) {
+            if (rankCount[r] == 4) return true;
+        }
+        return false;
+    }
+    bool dropFourOfAKind(Card::Rank r) {
+        int count = 0;
+        for (auto& c : hand) {
+            if (c.rank == r) count++;
+        }
+        if (count < 4) return false;
+        int removed = 0;
+        for (int i = 0; i < (int)hand.size() && removed < 4;) {
+            if (hand[i].rank == r) {
+                hand.erase(hand.begin() + i);
+                removed++;
+            }
+            else {
+                i++;
+            }
+        }
+        collectedRanks.push_back(r); 
+        cout << name << " dropped four of rank " << r << "!\n";
+        return true;
+    }
+
     void showHand() const {
         cout << name << "'s hand:" << endl;
         for (auto& c : hand) {
@@ -205,9 +239,7 @@ void processComputerTurn(Player& comp, Player& user, Deck& deck) {
                     break;
                 }
                 else {
-                    // check for "give <rank>"
                     if (tmp.rfind("give", 0) == 0) {
-                        // parse rank after "give"
                         string rnk = tmp.substr(5);
                         try {
                             Card::Rank rr = parseRank(rnk);

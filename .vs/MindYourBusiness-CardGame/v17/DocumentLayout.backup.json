@@ -14,24 +14,24 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
-            {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
-            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "MindYourBusiness-CardGame.cpp",
               "DocumentMoniker": "C:\\GSR-CardGame\\MindYourBusiness-CardGame\\MindYourBusiness-CardGame\\MindYourBusiness-CardGame.cpp",
               "RelativeDocumentMoniker": "MindYourBusiness-CardGame\\MindYourBusiness-CardGame.cpp",
-              "ToolTip": "C:\\GSR-CardGame\\MindYourBusiness-CardGame\\MindYourBusiness-CardGame\\MindYourBusiness-CardGame.cpp*",
-              "RelativeToolTip": "MindYourBusiness-CardGame\\MindYourBusiness-CardGame.cpp*",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAMUBAAAAAAAAAAAAAA==",
+              "ToolTip": "C:\\GSR-CardGame\\MindYourBusiness-CardGame\\MindYourBusiness-CardGame\\MindYourBusiness-CardGame.cpp",
+              "RelativeToolTip": "MindYourBusiness-CardGame\\MindYourBusiness-CardGame.cpp",
+              "ViewState": "AgIAACoAAAAAAAAAAAAAAPAAAAAWAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2024-12-27T10:34:51.397Z",
               "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
             }
           ]
         }
