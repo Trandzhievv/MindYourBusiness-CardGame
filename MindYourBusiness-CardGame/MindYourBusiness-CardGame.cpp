@@ -1,3 +1,19 @@
+/**
+*
+* Solution to course project # 8
+* Introduction to programming course
+* Faculty of Mathematics and Informatics of Sofia University
+* Winter semester 2024/2025
+*
+* @author Ivan Trandzhiev 
+* @idnumber 8MI0600550
+* @compiler VC
+*
+* Header: MindYourBusiness
+*
+*/
+
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -6,12 +22,24 @@
 
 using namespace std;
 
+static const int INITIAL_HAND_SIZE = 6;
+static const int MIN_RANK = 1;
+static const int MAX_RANK = 13;
+static const int TOTAL_SUITS = 4;
+static const int CARDS_PER_SUIT = 13;
+static const int RANK_ARRAY_SIZE = 14;
+static const int FULL_COLLECTION = 13;
+static const int RANDOM_TRIES = 20;
+static const int FOUR_OF_A_KIND = 4;
+static const int MIN_NUMERIC_RANK = 2;
+static const int MAX_NUMERIC_RANK = 10;
+
 static string rankToStr(int r) {
     static const string rankNames[] = {
         "", "A", "2", "3", "4", "5", "6",
         "7", "8", "9", "10", "J", "Q", "K"
     };
-    if (r >= 1 && r <= 13) return rankNames[r];
+    if (r >= MIN_RANK && r <= MAX_RANK) return rankNames[r];
     return "???";
 }
 
@@ -33,8 +61,8 @@ struct Card {
 struct Deck {
     vector<Card> cards;
     Deck() {
-        for (int s = 0; s < 4; s++) {
-            for (int r = 1; r <= 13; r++) {
+        for (int s = 0; s < TOTAL_SUITS; s++) {
+            for (int r = MIN_RANK; r <= MAX_RANK; r++) {
                 cards.push_back(Card((Card::Rank)r, (Card::Suit)s));
             }
         }
@@ -63,16 +91,20 @@ struct Player {
     string name;
     vector<Card> hand;
     vector<Card::Rank> collectedRanks;
+
     Player(const string& n) : name(n) {}
+
     void addCard(const Card& c) {
         hand.push_back(c);
     }
+
     bool hasRank(Card::Rank r) const {
         for (int i = 0; i < (int)hand.size(); i++) {
             if (hand[i].rank == r) return true;
         }
         return false;
     }
+
     void giveCards(Card::Rank r, vector<Card>& target) {
         for (int i = 0; i < (int)hand.size();) {
             if (hand[i].rank == r) {
@@ -82,31 +114,34 @@ struct Player {
             else i++;
         }
     }
+
     void showHand() const {
         cout << name << "'s hand:" << endl;
         for (int i = 0; i < (int)hand.size(); i++) {
             cout << "  " << hand[i].toString() << endl;
         }
     }
+
     bool canDropFourOfAKind() const {
-        int rankCount[14];
-        for (int i = 0; i < 14; i++) rankCount[i] = 0;
+        int rankCount[RANK_ARRAY_SIZE];
+        for (int i = 0; i < RANK_ARRAY_SIZE; i++) rankCount[i] = 0;
         for (int i = 0; i < (int)hand.size(); i++) {
             rankCount[hand[i].rank]++;
         }
         for (int r = (int)Card::Ace; r <= (int)Card::King; r++) {
-            if (rankCount[r] == 4) return true;
+            if (rankCount[r] == FOUR_OF_A_KIND) return true;
         }
         return false;
     }
+
     bool dropFourOfAKind(Card::Rank r) {
         int countCheck = 0;
         for (int i = 0; i < (int)hand.size(); i++) {
             if (hand[i].rank == r) countCheck++;
         }
-        if (countCheck < 4) return false;
+        if (countCheck < FOUR_OF_A_KIND) return false;
         int removed = 0;
-        for (int i = 0; i < (int)hand.size() && removed < 4;) {
+        for (int i = 0; i < (int)hand.size() && removed < FOUR_OF_A_KIND;) {
             if (hand[i].rank == r) {
                 hand.erase(hand.begin() + i);
                 removed++;
@@ -117,12 +152,14 @@ struct Player {
         cout << name << " just dropped four of rank " << rankToStr(r) << "!" << endl;
         return true;
     }
+
     bool ownsSet(Card::Rank r) const {
         for (int i = 0; i < (int)collectedRanks.size(); i++) {
             if (collectedRanks[i] == r) return true;
         }
         return false;
     }
+
     void takeSet(Card::Rank r, Player& from) {
         for (int i = 0; i < (int)from.collectedRanks.size(); i++) {
             if (from.collectedRanks[i] == r) {
@@ -135,7 +172,7 @@ struct Player {
 };
 
 bool all13Collected(const Player& p1, const Player& p2) {
-    return (p1.collectedRanks.size() + p2.collectedRanks.size() == 13);
+    return (p1.collectedRanks.size() + p2.collectedRanks.size() == FULL_COLLECTION);
 }
 
 Card::Rank parseRank(const string& input) {
@@ -152,7 +189,7 @@ Card::Rank parseRank(const string& input) {
         for (int i = 0; i < (int)input.size(); i++) {
             val = val * 10 + (input[i] - '0');
         }
-        if (val >= 2 && val <= 10) return (Card::Rank)val;
+        if (val >= MIN_NUMERIC_RANK && val <= MAX_NUMERIC_RANK) return (Card::Rank)val;
     }
     return Card::Ace;
 }
@@ -247,6 +284,10 @@ UserAskStatus userAskOnce(Player& active, Player& opponent, Card::Rank& lastAske
 bool userAskAndContinue(Player& active, Player& opponent, Deck& deck) {
     Card::Rank lastAsked = Card::Ace;
     while (true) {
+        if (active.hand.empty()) {
+            cout << active.name << " has no cards left, ending turn." << endl;
+            return false;
+        }
         UserAskStatus st = userAskOnce(active, opponent, lastAsked);
         if (st == ASK_OK) {
             cout << "Your hand after the move:" << endl;
@@ -331,15 +372,27 @@ bool computerContinueAsking(Player& comp, Player& user, Deck& deck) {
     Card::Rank lastRank = (Card::Rank)0;
     while (true) {
         if (comp.hand.empty()) {
-            cout << comp.name << " has no cards to ask for." << endl;
-            return true;
+            cout << comp.name << " has no cards left, ending turn." << endl;
+            return false;
         }
+        while (comp.canDropFourOfAKind()) {
+            bool dropped = false;
+            for (int r = (int)Card::Ace; r <= (int)Card::King; r++) {
+                if (comp.dropFourOfAKind((Card::Rank)r)) {
+                    dropped = true;
+                    break;
+                }
+            }
+            if (!dropped) break;
+        }
+
         Card::Rank candidate = comp.hand[rand() % comp.hand.size()].rank;
         int tries = 0;
-        while (candidate == lastRank && comp.hand.size() > 1 && tries < 20) {
+        while (candidate == lastRank && comp.hand.size() > 1 && tries < RANDOM_TRIES) {
             candidate = comp.hand[rand() % comp.hand.size()].rank;
             tries++;
         }
+
         bool success = computerAskGiveCards(comp, user, candidate);
         if (!success) {
             if (deck.isEmpty()) {
@@ -347,6 +400,17 @@ bool computerContinueAsking(Player& comp, Player& user, Deck& deck) {
                 return false;
             }
             Card c = drawCardFromDeck(comp, deck, false);
+
+            while (comp.canDropFourOfAKind()) {
+                bool dropped = false;
+                for (int r = (int)Card::Ace; r <= (int)Card::King; r++) {
+                    if (comp.dropFourOfAKind((Card::Rank)r)) {
+                        dropped = true;
+                        break;
+                    }
+                }
+                if (!dropped) break;
+            }
             if (c.rank == candidate) {
                 cout << "Computer drew the same rank. Continues turn." << endl;
                 lastRank = candidate;
@@ -356,6 +420,16 @@ bool computerContinueAsking(Player& comp, Player& user, Deck& deck) {
             }
         }
         else {
+            while (comp.canDropFourOfAKind()) {
+                bool dropped = false;
+                for (int r = (int)Card::Ace; r <= (int)Card::King; r++) {
+                    if (comp.dropFourOfAKind((Card::Rank)r)) {
+                        dropped = true;
+                        break;
+                    }
+                }
+                if (!dropped) break;
+            }
             lastRank = candidate;
         }
     }
@@ -373,36 +447,60 @@ void processTurnPhaseOne(Player& active, Player& opponent, Deck& deck, bool isUs
 }
 
 void processSecondPhaseUser(Player& user, Player& comp) {
-    cout << "Enter: askset <rank>" << endl;
-    string cmd;
-    cin >> cmd;
-    if (cmd == "askset") {
-        string rankInput;
-        cin >> rankInput;
-        Card::Rank r = parseRank(rankInput);
-        if (comp.ownsSet(r)) {
-            cout << "You received the entire set of rank " << rankToStr(r) << "!" << endl;
-            user.takeSet(r, comp);
+    while (true) {
+        cout << "Enter: askset <rank>" << endl;
+        string cmd;
+        cin >> cmd;
+        if (cmd == "askset") {
+            string rankInput;
+            cin >> rankInput;
+            Card::Rank r = parseRank(rankInput);
+            bool validInput = (rankInput == "A" || rankInput == "a" ||
+                rankInput == "J" || rankInput == "j" ||
+                rankInput == "Q" || rankInput == "q" ||
+                rankInput == "K" || rankInput == "k");
+            if (!validInput) {
+                if (r >= Card::Two && r <= Card::Ten && rankToStr(r) == rankInput) {
+                    validInput = true;
+                }
+            }
+            if (!validInput) {
+                cout << "Invalid rank input. Try again." << endl;
+                continue;
+            }
+            if (comp.ownsSet(r)) {
+                cout << "You received the entire set of rank " << rankToStr(r) << "!" << endl;
+                user.takeSet(r, comp);
+                cout << "Successful! You can ask again." << endl;
+            }
+            else {
+                cout << "Mind your business!" << endl;
+                break;
+            }
         }
         else {
-            cout << "Mind your business!" << endl;
+            cout << "Invalid command. Try again." << endl;
+            continue;
         }
-    }
-    else {
-        cout << "Invalid command." << endl;
+        if (user.collectedRanks.size() == FULL_COLLECTION) break;
     }
 }
 
 void processSecondPhaseComputer(Player& comp, Player& user) {
-    Card::Rank rr = (Card::Rank)(1 + rand() % 13);
-    cout << comp.name << " asks for the entire set of rank " << rankToStr(rr) << "!" << endl;
-    if (user.ownsSet(rr)) {
-        cout << comp.name << " takes that set from you." << endl;
-        comp.takeSet(rr, user);
-    }
-    else {
-        cout << "Please type 'mind your business!': ";
-        waitForMindYourBusiness();
+    while (true) {
+        Card::Rank rr = (Card::Rank)(MIN_RANK + rand() % MAX_RANK);
+        cout << comp.name << " asks for the entire set of rank " << rankToStr(rr) << "!" << endl;
+        if (user.ownsSet(rr)) {
+            cout << comp.name << " takes that set from you." << endl;
+            comp.takeSet(rr, user);
+            cout << "Successful! " << comp.name << " can ask again." << endl;
+        }
+        else {
+            cout << "Please type 'mind your business!': ";
+            waitForMindYourBusiness();
+            break;
+        }
+        if (comp.collectedRanks.size() == FULL_COLLECTION) break;
     }
 }
 
@@ -422,18 +520,18 @@ void runGame(Deck& deck, Player& user, Player& computer) {
             }
         }
         else {
-            if (user.collectedRanks.size() == 13 || computer.collectedRanks.size() == 13) break;
+            if (user.collectedRanks.size() == FULL_COLLECTION || computer.collectedRanks.size() == FULL_COLLECTION) break;
             if (userTurn) processSecondPhaseUser(user, computer);
             else processSecondPhaseComputer(computer, user);
         }
         userTurn = !userTurn;
-        if (user.collectedRanks.size() == 13 || computer.collectedRanks.size() == 13) break;
+        if (user.collectedRanks.size() == FULL_COLLECTION || computer.collectedRanks.size() == FULL_COLLECTION) break;
     }
     cout << endl << "Game over!" << endl;
     cout << "User has collected " << user.collectedRanks.size() << " sets." << endl;
     cout << "Computer has collected " << computer.collectedRanks.size() << " sets." << endl;
-    if (user.collectedRanks.size() == 13) cout << "User wins by collecting all sets!" << endl;
-    else if (computer.collectedRanks.size() == 13) cout << "Computer wins by collecting all sets!" << endl;
+    if (user.collectedRanks.size() == FULL_COLLECTION) cout << "User wins by collecting all sets!" << endl;
+    else if (computer.collectedRanks.size() == FULL_COLLECTION) cout << "Computer wins by collecting all sets!" << endl;
     else cout << "No one collected all 13 sets." << endl;
 }
 
@@ -442,7 +540,7 @@ int main() {
     Player user("User"), computer("Computer");
     cout << "Command: deal" << endl;
     deck.shuffle();
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < INITIAL_HAND_SIZE; i++) {
         user.addCard(deck.dealCard());
         computer.addCard(deck.dealCard());
     }
@@ -451,13 +549,3 @@ int main() {
     runGame(deck, user, computer);
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
